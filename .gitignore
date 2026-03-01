@@ -1,0 +1,14 @@
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Compiled TypeScript Code
+dist/
+
+# Mac System Files
+.DS_Store
+src/.DS_Store
+
+# Dependencies
+node_modules/
