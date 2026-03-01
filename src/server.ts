@@ -61,19 +61,33 @@ io.on("connection", (socket) => {
 });
 
 async function start() {
-  await prisma.$connect();
-  await redis.ping();
-  await initGenerationWorker(io);
+  try {
+    console.log("⏳ 1. Attempting to connect to Prisma...");
+    await prisma.$connect();
+    console.log("✅ 1. Prisma connected successfully!");
 
-  server.listen(env.PORT, () => {
-    console.log(`Forge AI backend running on port ${env.PORT}`);
-  });
+    console.log("⏳ 2. Attempting to ping Redis...");
+    await redis.ping();
+    console.log("✅ 2. Redis pinged successfully!");
+
+    console.log("⏳ 3. Initializing generation worker...");
+    await initGenerationWorker(io);
+    console.log("✅ 3. Generation worker initialized!");
+
+    // Prioritize Railway's dynamic PORT, fallback to custom env.PORT
+    const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : (env.PORT || 8080);
+
+    // CRITICAL: Bind to 0.0.0.0 so Railway can route external traffic to the container
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Forge AI backend running on port ${PORT} at 0.0.0.0`);
+    });
+  } catch (error) {
+    console.error("❌ CRITICAL ERROR DURING STARTUP:", error);
+    process.exit(1);
+  }
 }
 
-start().catch((error) => {
-  console.error("Failed to start server", error);
-  process.exit(1);
-});
+start();
 
 async function gracefulShutdown() {
   console.log("Shutting down Forge AI backend...");
